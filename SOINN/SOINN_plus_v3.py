@@ -215,7 +215,7 @@ class SOINN_plus(object):
         """
         # create edge between winner and second winner if it not exists
         n_edges = self.network.ecount()
-        if n_edges == 0 or not self.network.are_connected(n1.index, n2.index):
+        if n_edges == 0 or not self.network.are_connected(n1.index, n2.index) and n1['c'] == n2['c']:
             edge = self.network.add_edge(source=n1.index, target=n2.index)
             edge['it'] = 1
             edge['wt'] = 1
@@ -231,6 +231,15 @@ class SOINN_plus(object):
             e['it'] += 1
 
     def _edge_deletion(self):
+        if self.t % self.iter_edge_del == 0:
+            for e in self.network.es:
+                source = e.source
+                target = e.target
+                if self.network.vs[source]['c'] != self.network.vs[target]['c']:
+                    self.network.delete_edges(e.index)
+                    self.n_del_edges += 1
+
+    def OLD_edge_deletion(self):
         """
         Edge removal algorithm.
         Edges between different clusters should be removed. The assumption behind is that edges between different clusters have a high lifetime.

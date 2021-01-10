@@ -21,8 +21,8 @@ class SOINN_plus(object):
         Second random initialization example.
     x3 : array, shape = [n_features]
         Third random initialization example.
-    edge_max_age : int
-        Max edge age.
+    iter_edge_del : int (default: 100)
+        Edge removal process starts every iter_edge_del iterations.
     pull_factor : int (default: 100)
         Pull factor for node merging.
 
@@ -52,14 +52,21 @@ class SOINN_plus(object):
             'c' : string
                 Class label of the node.
         Edges have the following attributes:
-            'lt' : int
-                Edge's lifetime.
+            'it' : int
+                Edge's idle time.
+            'wt' : int
+                Number of times the edge was reset.
+            'u' : float
+                The utility of the edge.
     """
 
-    def __init__(self, x1, x2, x3, edge_max_age, pull_factor=100):
+    def __init__(self, x1, x2, x3, iter_edge_del=100, pull_factor=100):
         self.t = 3
-        self.edge_max_age = edge_max_age
+        self.iter_edge_del = iter_edge_del
         self.pull_factor = pull_factor
+
+        self.n_del_edges = 0
+        self.n_del_nodes = 0
 
         # generating the graph and adding 3 random training samples
         self.network = ig.Graph()
@@ -148,9 +155,10 @@ class SOINN_plus(object):
             for n in node.neighbors():
                 distances.append(self._distance(node['w'], n['w']))
             d = max(distances)
-        # threshold depends on the winning times of the node, the larger this value the larger the threshold becomes
+        # threshold depends on the number of winning times, the larger this value the larger the threshold becomes
         if d != 0:
             d += d * (1 - 1 / node['wt'])
+            #d += d * (1 - 1 / self.t)
         node['st'] = d
 
     def _add_node(self, weights, y):
@@ -209,41 +217,50 @@ class SOINN_plus(object):
         n_edges = self.network.ecount()
         if n_edges == 0 or not self.network.are_connected(n1.index, n2.index):
             edge = self.network.add_edge(source=n1.index, target=n2.index)
-            edge['lt'] = 0
+            edge['it'] = 1
+            edge['wt'] = 1
 
         # if edge between winner and second winner exists, then reset its lifetime
         if self.network.are_connected(n1.index, n2.index):
-            self.network.es[self.network.get_eid(n1.index, n2.index)]['lt'] = 0
+            self.network.es[self.network.get_eid(n1.index, n2.index)]['it'] = 1
+            self.network.es[self.network.get_eid(
+                n1.index, n2.index)]['wt'] += 1
 
         # increment lifetime of all edges that are connected to winner
         for e in self.network.vs[n1.index].incident():
-            e['lt'] += 1
+            e['it'] += 1
 
     def _edge_deletion(self):
         """
         Edge removal algorithm.
         Edges between different clusters should be removed. The assumption behind is that edges between different clusters have a high lifetime.
-        If the lifetime of the edge is above the mean, then it will removed with a probability that depends on how much it differs from the mean.
+        If the lifetime of the edge is above the mean, then it will be considered for removal.
         """
-        # mean lt calculation
-        max_lt = 0.0
+        # mean lifetime
+        its = []
         for e in self.network.es:
-            if e['lt'] > max_lt:
-                max_lt = e['lt']
+            its.append(e['it'])
+        it_mean = np.mean(its)
+
+        # computing edge utilities
+        us = []
+        max_u = 0.0
+        for e in self.network.es:
+            e['u'] = e['wt'] / e['it']
+            us.append(e['u'])
+            if e['u'] > max_u:
+                max_u = e['u']
+        u_mean = np.mean(us)
 
         # edge deletion
-        # if self.t % self.iter_edge_del == 0:
-        # for e in self.network.es:
-        #    if e['lt'] > (lt_mean + lt_std * 3):
-        #        prob_deletion = e['lt'] / max_lt
-        #        prob_survival = 1 - prob_deletion
-        #        if prob_deletion > prob_survival:
-        #            self.network.delete_edges(e.index)
-        for e in self.network.es:
-            source = e.source
-            target = e.target
-            if (e['lt'] > self.edge_max_age) or (self.network.vs[source]['c'] != self.network.vs[target]['c']):
-                self.network.delete_edges(e.index)
+        if (max_u > 0) and (self.t % self.iter_edge_del == 0):
+            for e in self.network.es:
+                if e['it'] > it_mean and e['u'] < u_mean:
+                    prob_survival = e['u'] / max_u
+                    prob_deletion = 1 - prob_survival
+                    if prob_deletion > prob_survival:
+                        # self.network.delete_edges(e.index)
+                        self.n_del_edges += 1
 
     def _nodes_deletion(self):
         """
@@ -263,10 +280,11 @@ class SOINN_plus(object):
         # nodes deletion
         for n in self.network.vs:
             if n.degree() == 0 and n['u'] < u_mean:
-                prob_deletion = 1 - n['u'] / max_u
                 prob_survival = n['u'] / max_u
+                prob_deletion = 1 - prob_survival
                 if prob_deletion > prob_survival:
                     self.network.delete_vertices(n.index)
+                    self.n_del_nodes += 1
 
         # update idle times
         for n in self.network.vs:

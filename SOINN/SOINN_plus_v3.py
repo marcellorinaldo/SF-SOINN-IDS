@@ -259,7 +259,7 @@ class SOINN_plus(object):
                     prob_survival = e['u'] / max_u
                     prob_deletion = 1 - prob_survival
                     if prob_deletion > prob_survival:
-                        # self.network.delete_edges(e.index)
+                        self.network.delete_edges(e.index)
                         self.n_del_edges += 1
 
     def _nodes_deletion(self):

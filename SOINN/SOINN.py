@@ -57,6 +57,7 @@ class SOINN(object):
             'wt' : int
                 Number of times the edge was reset.
     """
+
     def __init__(self, x1, x2, x3, max_edge_age, iter_lambda=100, pull_factor=100):
         self.t = 3
         self.max_edge_age = max_edge_age
@@ -324,15 +325,16 @@ class SOINN(object):
                     n1['c'].append(y)
                     self._merge_nodes(n1, x)
                     self._linking(n1, n2)
-                    if n_edges > 3:
-                        self._edge_deletion()
 
                 if self.t % self.iter_lambda == 0:
                     if n_nodes > 3:
                         self._nodes_deletion()
+                    if n_edges > 3:
+                        self._edge_deletion()
                     self._group()
             else:
-                print('ERROR: if learning, then label y associated with input x must be provided.')
+                print(
+                    'ERROR: if learning, then label y associated with input x must be provided.')
                 prediction = None
         else:
             # make prediction, retrieve closest node and output result

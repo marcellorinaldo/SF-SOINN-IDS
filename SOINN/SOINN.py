@@ -48,9 +48,9 @@ class SOINN(object):
             'u' : float
                 Utility of a node.
             'c' : string
-                List of class labels that are assigned to that node.
-            'cl' : list
                 Definitive class label of the node.
+            'cl' : list
+                List of class labels that are assigned to that node.
         Edges have the following attributes:
             'it' : int
                 Edge's idle time.
@@ -79,12 +79,12 @@ class SOINN(object):
         self.network.vs[0]['it'] = 1
         self.network.vs[1]['it'] = 1
         self.network.vs[2]['it'] = 1
-        self.network.vs[0]['c'] = [NOISE_LABEL]
-        self.network.vs[1]['c'] = [NOISE_LABEL]
-        self.network.vs[2]['c'] = [NOISE_LABEL]
-        self.network.vs[0]['cl'] = NOISE_LABEL
-        self.network.vs[1]['cl'] = NOISE_LABEL
-        self.network.vs[2]['cl'] = NOISE_LABEL
+        self.network.vs[0]['cl'] = [NOISE_LABEL]
+        self.network.vs[1]['cl'] = [NOISE_LABEL]
+        self.network.vs[2]['cl'] = [NOISE_LABEL]
+        self.network.vs[0]['c'] = NOISE_LABEL
+        self.network.vs[1]['c'] = NOISE_LABEL
+        self.network.vs[2]['c'] = NOISE_LABEL
 
     def _distance(self, a, b):
         """
@@ -178,8 +178,8 @@ class SOINN(object):
         new_node['w'] = weights
         new_node['wt'] = 1
         new_node['it'] = 1
-        new_node['c'] = [y]
-        new_node['cl'] = y
+        new_node['cl'] = [y]
+        new_node['c'] = y
 
     def _merge_nodes(self, n1, x):
         """
@@ -230,14 +230,13 @@ class SOINN(object):
             e['it'] += 1
 
     def _edge_deletion(self):
-        # for e in self.network.es:
-        #    source = self.network.vs[e.source]
-        #    target = self.network.vs[e.target]
-        #    if source['sc'] != target['sc']:
-        #        self.network.delete_edges(e.index)
-        #        self.n_del_edges += 1
+        """
+        Remove edges that exceed maximum age or connect different clusters.
+        """
         for e in self.network.es:
-            if e['it'] > self.max_edge_age:
+            source = self.network.vs[e.source]
+            target = self.network.vs[e.target]
+            if e['it'] > self.max_edge_age or source['c'] != target['c']:
                 self.network.delete_edges(e.index)
                 self.n_del_edges += 1
 
@@ -275,16 +274,9 @@ class SOINN(object):
         """
         # assigning the most frequent label as class label
         for n in self.network.vs:
-            occurence_count = Counter(n['c'])
-            n['cl'] = occurence_count.most_common(1)[0][0]
-            n['c'] = [n['cl']]
-
-        # removing edges between different classes
-        for e in self.network.es:
-            source = self.network.vs[e.source]
-            target = self.network.vs[e.target]
-            if source['cl'] != target['cl']:
-                self.network.delete_edges(e.index)
+            occurence_count = Counter(n['cl'])
+            n['c'] = occurence_count.most_common(1)[0][0]
+            n['cl'] = [n['c']]
 
     def input_signal(self, x, y=None, learning=True):
         """
@@ -311,7 +303,7 @@ class SOINN(object):
                 n_edges = self.network.ecount()
 
                 n1, n2 = self._get_n1_n2(x)
-                prediction = n1['cl']
+                prediction = n1['c']
 
                 self._similarity_threshold(x, n1)
                 self._similarity_threshold(x, n2)
@@ -322,7 +314,7 @@ class SOINN(object):
                     self._add_node(x, y)
                 else:
                     n1['wt'] += 1
-                    n1['c'].append(y)
+                    n1['cl'].append(y)
                     self._merge_nodes(n1, x)
                     self._linking(n1, n2)
 
@@ -339,6 +331,6 @@ class SOINN(object):
         else:
             # make prediction, retrieve closest node and output result
             n1, _ = self._get_n1_n2(x)
-            prediction = n1['cl']
+            prediction = n1['c']
 
         return prediction

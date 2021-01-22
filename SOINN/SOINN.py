@@ -321,9 +321,9 @@ class SOINN(object):
                 if self.t % self.iter_lambda == 0:
                     if n_nodes > 3:
                         self._nodes_deletion()
+                    self._group()
                     if n_edges > 3:
                         self._edge_deletion()
-                    self._group()
             else:
                 print(
                     'ERROR: if learning, then label y associated with input x must be provided.')

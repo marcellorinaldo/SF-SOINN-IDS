@@ -316,7 +316,9 @@ class SOINN(object):
                 self._add_node(x, y)
             else:
                 n1['wt'] += 1
-                n1['cl'].append(y)
+                # noise labels should not accumulate, for active learning
+                if y != NOISE_LABEL:
+                    n1['cl'].append(y)
 
                 self._merge_nodes(n1, x)
                 self._linking(n1, n2)

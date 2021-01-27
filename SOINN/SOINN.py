@@ -280,7 +280,7 @@ class SOINN(object):
 
     def input_signal(self, x, y=None, learning=True):
         """
-        Fit the input signal x.
+        Fit the input signal x. If the input label is not set, then the new input is added with the noise label.
 
         Parameters
         ----------
@@ -297,37 +297,36 @@ class SOINN(object):
             The predicted label. None if prediction fails.
         """
         if learning:
-            if y is not None:
-                self.t += 1
-                n_nodes = self.network.vcount()
-                n_edges = self.network.ecount()
+            if y is None:
+                y = NOISE_LABEL
 
-                n1, n2 = self._get_n1_n2(x)
-                prediction = n1['c']
+            self.t += 1
+            n_nodes = self.network.vcount()
+            n_edges = self.network.ecount()
 
-                self._similarity_threshold(x, n1)
-                self._similarity_threshold(x, n2)
+            n1, n2 = self._get_n1_n2(x)
+            prediction = n1['c']
 
-                d1 = self._distance(x, n1['w'])
-                d2 = self._distance(x, n2['w'])
-                if d1 >= n1['st'] or d2 >= n2['st']:
-                    self._add_node(x, y)
-                else:
-                    n1['wt'] += 1
-                    n1['cl'].append(y)
-                    self._merge_nodes(n1, x)
-                    self._linking(n1, n2)
+            self._similarity_threshold(x, n1)
+            self._similarity_threshold(x, n2)
 
-                if self.t % self.iter_lambda == 0:
-                    if n_nodes > 3:
-                        self._nodes_deletion()
-                    self._group()
-                    if n_edges > 3:
-                        self._edge_deletion()
+            d1 = self._distance(x, n1['w'])
+            d2 = self._distance(x, n2['w'])
+            if d1 >= n1['st'] or d2 >= n2['st']:
+                self._add_node(x, y)
             else:
-                print(
-                    'ERROR: if learning, then label y associated with input x must be provided.')
-                prediction = None
+                n1['wt'] += 1
+                n1['cl'].append(y)
+
+                self._merge_nodes(n1, x)
+                self._linking(n1, n2)
+
+            if self.t % self.iter_lambda == 0:
+                if n_nodes > 3:
+                    self._nodes_deletion()
+                self._group()
+                if n_edges > 3:
+                    self._edge_deletion()
         else:
             # make prediction, retrieve closest node and output result
             n1, _ = self._get_n1_n2(x)

@@ -88,7 +88,7 @@ class SOINN(object):
 
     def _distance(self, a, b):
         """
-        Computes the squared Euclidean distance between two arrays a and b.
+        Computes the fractional distance between two arrays a and b.
 
         Parameters
         ----------
@@ -100,9 +100,12 @@ class SOINN(object):
         Returns
         -------
         distance : float
-            The squared Euclidean distance between the two input arrays.
+            The fractional distance between the two input arrays.
         """
-        distance = norm(a - b) ** 2
+        f = 0.5
+        diff = abs(a - b) ** f
+        sum = np.sum(diff)
+        distance = math.pow(sum, 1/f)
 
         return distance
 

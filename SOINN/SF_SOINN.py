@@ -9,7 +9,7 @@ from collections import Counter
 NOISE_LABEL = 'noise'
 
 
-class SOINN(object):
+class SF_SOINN(object):
     """
     Improved version of the Self-organizing incremental neural network called SOINN+.
 

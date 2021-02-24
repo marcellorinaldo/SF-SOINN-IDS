@@ -1,7 +1,7 @@
 # SOINN-IDS
 An Intrusion Detection System (IDS) based on a modified version of the Self-Organizing Incremental Neural Networks, called SF-SOINN.
 
-Reference my Master's Degree thesis (`thesis.pdf`) for the theoretical details.
+Reference my Master's Degree thesis (`thesis_martina_marcello_rinaldo.pdf`) for the theoretical details.
 
 Contents:
 * `SOINN` folder contains the SF-SOINN Python class.

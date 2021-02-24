@@ -1,5 +1,5 @@
-# SOINN-IDS
-An Intrusion Detection System (IDS) based on a modified version of the Self-Organizing Incremental Neural Networks, called SF-SOINN.
+# SF-SOINN-IDS
+An Intrusion Detection System (IDS) based on a modified version of the Self-Organizing Incremental Neural Networks, called Soft-Forgetting SOINN (SF-SOINN).
 
 Reference my Master's Degree thesis (`thesis_martina_marcello_rinaldo.pdf`) for the theoretical details.
 

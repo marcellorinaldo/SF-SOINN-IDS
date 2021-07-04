@@ -298,7 +298,10 @@ class SF_SOINN(object):
         -------
         prediction : string
             The predicted label. None if prediction fails.
+        confidence : float
+            The propability that the result is a true positive or true negative.
         """
+        n1, n2 = self._get_n1_n2(x)
         if learning:
             if y is None:
                 y = NOISE_LABEL
@@ -307,7 +310,6 @@ class SF_SOINN(object):
             n_nodes = self.network.vcount()
             n_edges = self.network.ecount()
 
-            n1, n2 = self._get_n1_n2(x)
             prediction = n1['c']
 
             self._similarity_threshold(x, n1)
@@ -334,7 +336,14 @@ class SF_SOINN(object):
                     self._edge_deletion()
         else:
             # make prediction, retrieve closest node and output result
-            n1, _ = self._get_n1_n2(x)
             prediction = n1['c']
 
-        return prediction
+        # compute confidence of result
+        confidence = 0
+        if n1 in self.network.vs:
+            self._similarity_threshold(x, n1)
+            if n1['st'] != None and n1['st'] != 0:
+                confidence = 1 - self._distance(
+                    x, n1['w']) / n1['st']
+
+        return prediction, confidence
